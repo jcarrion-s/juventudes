@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <style>
+    :root {
+      --color-principal: #046B76;
+      --color-secundario: #418C94;
+      --gris-claro: #D4D7D7;
+      --gris-medio: #A9B1B2;
+      --fondo-base: #F9F9F9;
+      --col-presidencia: #C7E4F9;
+      --col-senado-nacional: #F7D4E1;
+      --col-senado-regional: #F3D0B5;
+      --col-diputados: #D6EAD2;
+      --col-andino: #F8EFB6;
+      --ok: #1BC47D;
+      --error: #E53935;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Montserrat", "Segoe UI", Arial, sans-serif;
+      background: var(--fondo-base);
+      color: #102a2e;
+      min-height: 100vh;
+      line-height: 1.5;
+      padding-bottom: 4rem;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .pantalla {
+      width: min(100%, 1100px);
+      margin: 0 auto;
+      padding: 1rem;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+    }
+
+    .mision {
+      width: min(100%, 1100px);
+      margin: 0 auto;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--gris-claro);
+      border-radius: 0.75rem;
+      background: #ffffff;
+    }
+
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: #ffffff;
+      background: rgba(4, 107, 118, 0.9);
+    }
+
+    #logo-fijo {
+      position: fixed;
+      top: 0.75rem;
+      right: 0.75rem;
+      z-index: 45;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, var(--color-principal), var(--color-secundario));
+      border: 2px solid #ffffff;
+      box-shadow: 0 8px 20px rgba(4, 107, 118, 0.28);
+    }
+
+    #logo-fijo img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 9999px;
+    }
+
+    #loader img {
+      max-width: 85vw;
+      height: auto;
+      display: block;
+    }
+
+    #app {
+      padding-top: 1rem;
+    }
+
+    #simulador-cedula {
+      border: 1px solid var(--gris-claro);
+      border-radius: 0.75rem;
+      background: #ffffff;
+      overflow-x: auto;
+    }
+
+    #simulador-encabezados,
+    #simulador-filas {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(220px, 1fr));
+      min-width: 1100px;
+    }
+
+    #simulador-encabezados > div,
+    #simulador-filas > div {
+      padding: 0.75rem;
+      border-right: 1px solid var(--gris-claro);
+      border-bottom: 1px solid var(--gris-claro);
+      min-height: 72px;
+      font-size: 0.95rem;
+    }
+
+    #simulador-encabezados > div:nth-child(1) { background: var(--col-presidencia); }
+    #simulador-encabezados > div:nth-child(2) { background: var(--col-senado-nacional); }
+    #simulador-encabezados > div:nth-child(3) { background: var(--col-senado-regional); }
+    #simulador-encabezados > div:nth-child(4) { background: var(--col-diputados); }
+    #simulador-encabezados > div:nth-child(5) { background: var(--col-andino); border-right: 0; }
+
+    #simulador-filas > div:nth-child(5n) {
+      border-right: 0;
+    }
+
+    #footer-vote-compass {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+      min-height: 56px;
+      background: var(--color-secundario);
+      color: #ffffff;
+      border-top: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    [role="dialog"] {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      margin: auto;
+      width: min(92vw, 720px);
+      height: min(84vh, 560px);
+      padding: 1rem;
+      border: 1px solid var(--gris-medio);
+      border-radius: 0.75rem;
+      background: #ffffff;
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.22);
+      overflow: auto;
+    }
+
+    :focus-visible {
+      outline: 3px solid #0f2f34;
+      outline-offset: 2px;
+      border-radius: 0.25rem;
+    }
+
+    .fade-in {
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+
+    .fade-in.show {
+      opacity: 1;
+    }
+
+    .fade-out {
+      opacity: 1;
+      transition: opacity .3s ease;
+    }
+
+    .fade-out.hide {
+      opacity: 0;
+    }
+
+    @media (min-width: 640px) {
+      .pantalla {
+        padding: 1.25rem;
+      }
+
+      #logo-fijo {
+        width: 3.75rem;
+        height: 3.75rem;
+      }
+    }
+
+    @media (min-width: 768px) {
+      body {
+        font-size: 1.02rem;
+      }
+
+      .pantalla {
+        padding: 1.5rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      body {
+        font-size: 1.05rem;
+      }
+
+      .pantalla {
+        padding: 1.75rem;
+      }
+    }
+  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COMOSEVOTA.COM — Fase 3</title>
+</head>
+<body>
+  <div id="loader" role="status" aria-live="polite">
+    <img
+      src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nNDAnIHZpZXdCb3g9JzAgMCAxNjAgNDAnPjxyZWN0IHdpZHRoPScxNjAnIGhlaWdodD0nNDAnIHJ4PScxMCcgZmlsbD0nIzA0NkI3NicvPjx0ZXh0IHg9JzgwJyB5PScyNicgZm9udC1zaXplPScxNCcgZm9udC1mYW1pbHk9J01vbnRzZXJyYXQsIEFyaWFsLCBzYW5zLXNlcmlmJyBmaWxsPSd3aGl0ZScgdGV4dC1hbmNob3I9J21pZGRsZSc+Q2FyZ2FuZG8uLi48L3RleHQ+PC9zdmc+"
+      alt="Indicador visual de carga del juego"
+      width="160"
+      height="40"
+    >
+  </div>
+
+  <div id="logo-fijo" aria-label="Logo del juego fijo">
+    <img
+      src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2NCcgaGVpZ2h0PSc2NCcgdmlld0JveD0nMCAwIDY0IDY0Jz4KPHJlY3Qgd2lkdGg9JzY0JyBoZWlnaHQ9JzY0JyByeD0nMzInIGZpbGw9JyMwNDZCNzYnLz4KPHBhdGggZD0nTTMyIDEwTDUwIDUwSDE0WicgZmlsbD0nI0Y5RjlGOScvPgo8dGV4dCB4PSczMicgeT0nMzcnIGZvbnQtc2l6ZT0nMTEnIGZvbnQtZmFtaWx5PSdNb250c2VycmF0LCBBcmlhbCwgc2Fucy1zZXJpZicgZmlsbD0nIzA0NkI3NicgdGV4dC1hbmNob3I9J21pZGRsZSc+Vk9UQTwvdGV4dD4KPC9zdmc+"
+      alt="Logo de COMOSEVOTA.COM"
+      width="56"
+      height="56"
+    >
+  </div>
+
+  <main id="app">
+    <section id="pantalla-bienvenida" class="pantalla">
+      <img
+        src="data:image/gif;base64,R0lGODlhkABQAIABAP///wAAACH5BAEAAAEALAAAAACQAFAAAAIgjI+py+0Po5yUFQA7"
+        alt="GIF explicativo de cómo jugar COMOSEVOTA.COM"
+        width="144"
+        height="80"
+      >
+    </section>
+    <section id="pantalla-misiones" class="pantalla" hidden></section>
+    <section id="pantalla-mision-detalle" class="pantalla" hidden></section>
+    <section id="pantalla-simulador" class="pantalla" hidden>
+      <div id="simulador-cedula" role="grid" aria-label="Simulador de cédula electoral">
+        <div id="simulador-encabezados" role="row">
+          <div role="columnheader">Presidente y vicepresidentes</div>
+          <div role="columnheader">Senado Nacional</div>
+          <div role="columnheader">Senado Regional</div>
+          <div role="columnheader">Diputados</div>
+          <div role="columnheader">Parlamento Andino</div>
+        </div>
+        <div id="simulador-filas" aria-live="polite"></div>
+      </div>
+    </section>
+    <section id="pantalla-resultados" class="pantalla" hidden></section>
+    <section id="pantalla-creditos" class="pantalla" hidden></section>
+  </main>
+
+  <section id="contenedor-misiones" aria-label="Contenedores de misiones">
+    <article id="mision-random" class="mision" hidden></article>
+    <article id="mision-cancha" class="mision" hidden></article>
+    <article id="mision-mosco" class="mision" hidden></article>
+    <article id="mision-segunda" class="mision" hidden></article>
+    <article id="mision-ninguno" class="mision" hidden></article>
+    <article id="mision-cedula" class="mision" hidden></article>
+    <article id="mision-cruza" class="mision" hidden></article>
+    <article id="mision-mapa" class="mision" hidden></article>
+    <article id="mision-elegante" class="mision" hidden></article>
+    <article id="mision-simulador" class="mision" hidden></article>
+  </section>
+
+  <footer id="footer-vote-compass" role="contentinfo"></footer>
+
+  <div id="modal-bienvenida" role="dialog" aria-modal="true" hidden></div>
+  <div id="modal-mision-completada" role="dialog" aria-modal="true" hidden></div>
+  <div id="modal-error" role="dialog" aria-modal="true" hidden></div>
+  <div id="modal-creditos" role="dialog" aria-modal="true" hidden></div>
+  <div id="modal-ayuda" role="dialog" aria-modal="true" hidden></div>
+  <div id="modal-resultado-votacion" role="dialog" aria-modal="true" hidden></div>
+
+  <script type="application/json" id="data-partidos"></script>
+
+  <script id="script-logica-simulador">
+    const rutas = {
+      bienvenida: "pantalla-bienvenida",
+      misiones: "pantalla-misiones",
+      detalle: "pantalla-mision-detalle",
+      simulador: "pantalla-simulador",
+      resultados: "pantalla-resultados",
+      creditos: "pantalla-creditos"
+    };
+
+    let seleccionPresidente = null;
+    let seleccionSenadoNacional = [];
+    let seleccionSenadoRegional = [];
+    let seleccionDiputados = [];
+    let seleccionParlamentoAndino = [];
+
+    const misiones = [
+      { id: "presidente", titulo: "Presidente", columna: "Presidente y vicepresidentes" },
+      { id: "senado-nacional", titulo: "Senado Nacional", columna: "Senado Nacional" },
+      { id: "senado-regional", titulo: "Senado Regional", columna: "Senado Regional" },
+      { id: "diputados", titulo: "Diputados", columna: "Diputados" },
+      { id: "parlamento-andino", titulo: "Parlamento Andino", columna: "Parlamento Andino" }
+    ];
+
+    const datosCedula = {
+      presidente: [
+        { id: "P1", partido: "Partido Alfa" },
+        { id: "P2", partido: "Partido Beta" },
+        { id: "P3", partido: "Partido Gamma" }
+      ],
+      senadoNacional: [
+        { id: "SN1", partido: "Partido Alfa", lista: "Lista A" },
+        { id: "SN2", partido: "Partido Beta", lista: "Lista B" },
+        { id: "SN3", partido: "Partido Gamma", lista: "Lista X" }
+      ],
+      senadoRegional: [
+        { id: "SR1", partido: "Partido Alfa", lista: "Lista A" },
+        { id: "SR2", partido: "Partido Beta", lista: "Lista B" }
+      ],
+      diputados: [
+        { id: "D1", partido: "Partido Alfa", lista: "Lista A" },
+        { id: "D2", partido: "Partido Beta", lista: "Lista B" },
+        { id: "D3", partido: "Partido Gamma", lista: "Lista X" },
+        { id: "D4", partido: "Partido Alfa", lista: "Lista C" }
+      ],
+      parlamentoAndino: [
+        { id: "PA1", partido: "Partido Alfa" },
+        { id: "PA2", partido: "Partido Beta" },
+        { id: "PA3", partido: "Partido Gamma" }
+      ]
+    };
+
+
+    const estiloSeleccionada = document.createElement("style");
+    estiloSeleccionada.textContent = ".seleccionada{border:2px solid #046B76;background:rgba(4,107,118,.08);}";
+    document.head.appendChild(estiloSeleccionada);
+
+    function renderCedula() {
+      const simulador = document.getElementById("simulador-cedula");
+      if (!simulador) {
+        return;
+      }
+
+      const contenedorFilas = document.getElementById("simulador-filas");
+      if (!contenedorFilas) {
+        return;
+      }
+
+      const columnas = [
+        { key: "presidente", id: "col-presidencia", dataColumna: "presidencia" },
+        { key: "senadoNacional", id: "col-senado-nacional", dataColumna: "senado-nacional" },
+        { key: "senadoRegional", id: "col-senado-regional", dataColumna: "senado-regional" },
+        { key: "diputados", id: "col-diputados", dataColumna: "diputados" },
+        { key: "parlamentoAndino", id: "col-parlamento-andino", dataColumna: "parlamento-andino" }
+      ];
+
+      const htmlColumnas = columnas.map((columna) => {
+        const opciones = datosCedula[columna.key] || [];
+        const opcionesHtml = opciones.map((opcion) => {
+          const etiquetaLista = opcion.lista ? ` — ${opcion.lista}` : "";
+          return `<div data-id="${opcion.id}" data-columna="${columna.dataColumna}" class="opcion-cedula">${opcion.partido}${etiquetaLista}</div>`;
+        }).join("");
+
+        return `<div id="${columna.id}">${opcionesHtml}</div>`;
+      }).join("");
+
+      contenedorFilas.innerHTML = htmlColumnas;
+    }
+
+
+    function seleccionarOpcion(columna, idOpcion) {
+      const mapaEstado = {
+        presidencia: "seleccionPresidente",
+        "senado-nacional": "seleccionSenadoNacional",
+        "senado-regional": "seleccionSenadoRegional",
+        diputados: "seleccionDiputados",
+        "parlamento-andino": "seleccionParlamentoAndino"
+      };
+
+      const claveEstado = mapaEstado[columna];
+      if (!claveEstado) {
+        return;
+      }
+
+      if (claveEstado === "seleccionPresidente") {
+        seleccionPresidente = idOpcion;
+      } else if (claveEstado === "seleccionSenadoNacional") {
+        seleccionSenadoNacional = [idOpcion];
+      } else if (claveEstado === "seleccionSenadoRegional") {
+        seleccionSenadoRegional = [idOpcion];
+      } else if (claveEstado === "seleccionDiputados") {
+        seleccionDiputados = [idOpcion];
+      } else if (claveEstado === "seleccionParlamentoAndino") {
+        seleccionParlamentoAndino = [idOpcion];
+      }
+
+      const opcionesColumna = document.querySelectorAll(`.opcion-cedula[data-columna="${columna}"]`);
+      opcionesColumna.forEach((opcion) => {
+        opcion.classList.remove("seleccionada");
+      });
+
+      const opcionActiva = document.querySelector(`.opcion-cedula[data-columna="${columna}"][data-id="${idOpcion}"]`);
+      if (opcionActiva) {
+        opcionActiva.classList.add("seleccionada");
+      }
+    }
+
+
+    function validarVoto() {
+      const faltantes = [];
+
+      if (!seleccionPresidente) {
+        faltantes.push("Presidente");
+      }
+      if (!seleccionSenadoNacional.length) {
+        faltantes.push("Senado Nacional");
+      }
+      if (!seleccionSenadoRegional.length) {
+        faltantes.push("Senado Regional");
+      }
+      if (!seleccionDiputados.length) {
+        faltantes.push("Diputados");
+      }
+      if (!seleccionParlamentoAndino.length) {
+        faltantes.push("Parlamento Andino");
+      }
+
+      if (faltantes.length) {
+        return {
+          valido: false,
+          mensaje: `Falta seleccionar: ${faltantes.join(", ")}`
+        };
+      }
+
+      return { valido: true };
+    }
+
+    function prepararVotoFinal() {
+      const votoFinal = {
+        presidente: seleccionPresidente,
+        senadoNacional: [...seleccionSenadoNacional],
+        senadoRegional: [...seleccionSenadoRegional],
+        diputados: [...seleccionDiputados],
+        parlamentoAndino: [...seleccionParlamentoAndino],
+        preferenciasSenadoNacional: [],
+        preferenciasSenadoRegional: [],
+        preferenciasDiputados: [],
+        preferenciasParlamentoAndino: []
+      };
+
+      return votoFinal;
+    }
+
+
+
+    function validarReglasBasicas(votoFinal) {
+      const presidenteValido = !!votoFinal.presidente;
+      const senadoNacionalValido = Array.isArray(votoFinal.senadoNacional) && votoFinal.senadoNacional.length === 1;
+      const senadoRegionalValido = Array.isArray(votoFinal.senadoRegional) && votoFinal.senadoRegional.length === 1;
+      const diputadosValido = Array.isArray(votoFinal.diputados) && votoFinal.diputados.length === 1;
+      const parlamentoAndinoValido = Array.isArray(votoFinal.parlamentoAndino) && votoFinal.parlamentoAndino.length === 1;
+
+      if (!presidenteValido || !senadoNacionalValido || !senadoRegionalValido || !diputadosValido || !parlamentoAndinoValido) {
+        return {
+          valido: false,
+          tipo: "regla-basica",
+          mensaje: "El voto no cumple las reglas básicas."
+        };
+      }
+
+      return { valido: true };
+    }
+
+
+    function validarPreferencias(votoFinal) {
+      const preferenciasSenadoNacional = Array.isArray(votoFinal.preferenciasSenadoNacional) ? votoFinal.preferenciasSenadoNacional : [];
+      const preferenciasSenadoRegional = Array.isArray(votoFinal.preferenciasSenadoRegional) ? votoFinal.preferenciasSenadoRegional : [];
+      const preferenciasDiputados = Array.isArray(votoFinal.preferenciasDiputados) ? votoFinal.preferenciasDiputados : [];
+      const preferenciasParlamentoAndino = Array.isArray(votoFinal.preferenciasParlamentoAndino) ? votoFinal.preferenciasParlamentoAndino : [];
+
+      if (preferenciasSenadoNacional.length > 2) {
+        return { valido: false, tipo: "preferencias", mensaje: "Puedes elegir hasta dos preferencias para Senadores Nacionales." };
+      }
+      if (new Set(preferenciasSenadoNacional).size !== preferenciasSenadoNacional.length) {
+        return { valido: false, tipo: "preferencias", mensaje: "Las preferencias en Senadores Nacionales no pueden repetirse." };
+      }
+
+      if (preferenciasSenadoRegional.length > 1) {
+        return { valido: false, tipo: "preferencias", mensaje: "Solo puedes elegir una preferencia para Senadores Regionales." };
+      }
+
+      if (preferenciasDiputados.length > 2) {
+        return { valido: false, tipo: "preferencias", mensaje: "Puedes elegir hasta dos preferencias para Diputados." };
+      }
+      if (new Set(preferenciasDiputados).size !== preferenciasDiputados.length) {
+        return { valido: false, tipo: "preferencias", mensaje: "Las preferencias para Diputados no pueden repetirse." };
+      }
+
+      if (preferenciasParlamentoAndino.length > 2) {
+        return { valido: false, tipo: "preferencias", mensaje: "Puedes elegir hasta dos preferencias para Parlamento Andino." };
+      }
+      if (new Set(preferenciasParlamentoAndino).size !== preferenciasParlamentoAndino.length) {
+        return { valido: false, tipo: "preferencias", mensaje: "Las preferencias para Parlamento Andino no pueden repetirse." };
+      }
+
+      return { valido: true };
+    }
+
+
+    function evaluarCamara(camara, votoFinal) {
+      if (camara === "presidente") {
+        const seleccion = votoFinal.presidente;
+        if (!seleccion) {
+          return { estado: "blanco", detalle: "Presidencia sin selección." };
+        }
+        if (Array.isArray(seleccion) && seleccion.length > 1) {
+          return { estado: "nulo", detalle: "Presidencia con más de una selección." };
+        }
+        return { estado: "valido", detalle: "Presidencia válida." };
+      }
+
+      if (camara === "senadoNacional") {
+        const organizacion = Array.isArray(votoFinal.senadoNacional) ? votoFinal.senadoNacional : [];
+        const preferencias = Array.isArray(votoFinal.preferenciasSenadoNacional) ? votoFinal.preferenciasSenadoNacional : [];
+        if (!organizacion.length) {
+          return { estado: "blanco", detalle: "Senado Nacional sin selección." };
+        }
+        if (preferencias.length > 2) {
+          return { estado: "nulo", detalle: "Senado Nacional excede preferencias permitidas." };
+        }
+        if (new Set(preferencias).size !== preferencias.length) {
+          return { estado: "nulo", detalle: "Senado Nacional tiene preferencias duplicadas." };
+        }
+        return { estado: "valido", detalle: "Senado Nacional válido." };
+      }
+
+      if (camara === "senadoRegional") {
+        const organizacion = Array.isArray(votoFinal.senadoRegional) ? votoFinal.senadoRegional : [];
+        const preferencias = Array.isArray(votoFinal.preferenciasSenadoRegional) ? votoFinal.preferenciasSenadoRegional : [];
+        if (!organizacion.length) {
+          return { estado: "blanco", detalle: "Senado Regional sin selección." };
+        }
+        if (preferencias.length > 1) {
+          return { estado: "nulo", detalle: "Senado Regional excede preferencias permitidas." };
+        }
+        if (new Set(preferencias).size !== preferencias.length) {
+          return { estado: "nulo", detalle: "Senado Regional tiene preferencias duplicadas." };
+        }
+        return { estado: "valido", detalle: "Senado Regional válido." };
+      }
+
+      if (camara === "diputados") {
+        const organizacion = Array.isArray(votoFinal.diputados) ? votoFinal.diputados : [];
+        const preferencias = Array.isArray(votoFinal.preferenciasDiputados) ? votoFinal.preferenciasDiputados : [];
+        if (!organizacion.length) {
+          return { estado: "blanco", detalle: "Diputados sin selección." };
+        }
+        if (preferencias.length > 2) {
+          return { estado: "nulo", detalle: "Diputados excede preferencias permitidas." };
+        }
+        if (new Set(preferencias).size !== preferencias.length) {
+          return { estado: "nulo", detalle: "Diputados tiene preferencias duplicadas." };
+        }
+        return { estado: "valido", detalle: "Diputados válido." };
+      }
+
+      if (camara === "parlamentoAndino") {
+        const organizacion = Array.isArray(votoFinal.parlamentoAndino) ? votoFinal.parlamentoAndino : [];
+        const preferencias = Array.isArray(votoFinal.preferenciasParlamentoAndino) ? votoFinal.preferenciasParlamentoAndino : [];
+        if (!organizacion.length) {
+          return { estado: "blanco", detalle: "Parlamento Andino sin selección." };
+        }
+        if (preferencias.length > 2) {
+          return { estado: "nulo", detalle: "Parlamento Andino excede preferencias permitidas." };
+        }
+        if (new Set(preferencias).size !== preferencias.length) {
+          return { estado: "nulo", detalle: "Parlamento Andino tiene preferencias duplicadas." };
+        }
+        return { estado: "valido", detalle: "Parlamento Andino válido." };
+      }
+
+      return { estado: "nulo", detalle: "Cámara no reconocida." };
+    }
+
+    function evaluarVotoCompleto(votoFinal) {
+      return {
+        presidente: evaluarCamara("presidente", votoFinal),
+        senadoNacional: evaluarCamara("senadoNacional", votoFinal),
+        senadoRegional: evaluarCamara("senadoRegional", votoFinal),
+        diputados: evaluarCamara("diputados", votoFinal),
+        parlamentoAndino: evaluarCamara("parlamentoAndino", votoFinal)
+      };
+    }
+
+    function renderResultados(votoFinal, resultadoFinal) {
+      const contenedorResumen = document.getElementById("resumen-resultados");
+      if (!contenedorResumen || !votoFinal) {
+        return;
+      }
+
+      const resumen = resultadoFinal || evaluarVotoCompleto(votoFinal);
+
+      contenedorResumen.innerHTML = `
+        <div class="resultado-camara">
+          <h3>Presidente</h3>
+          <p>Estado: ${resumen.presidente.estado}</p>
+          <p>Detalle: ${resumen.presidente.detalle}</p>
+        </div>
+        <div class="resultado-camara">
+          <h3>Senadores Nacionales</h3>
+          <p>Estado: ${resumen.senadoNacional.estado}</p>
+          <p>Detalle: ${resumen.senadoNacional.detalle}</p>
+        </div>
+        <div class="resultado-camara">
+          <h3>Senadores Regionales</h3>
+          <p>Estado: ${resumen.senadoRegional.estado}</p>
+          <p>Detalle: ${resumen.senadoRegional.detalle}</p>
+        </div>
+        <div class="resultado-camara">
+          <h3>Diputados</h3>
+          <p>Estado: ${resumen.diputados.estado}</p>
+          <p>Detalle: ${resumen.diputados.detalle}</p>
+        </div>
+        <div class="resultado-camara">
+          <h3>Parlamento Andino</h3>
+          <p>Estado: ${resumen.parlamentoAndino.estado}</p>
+          <p>Detalle: ${resumen.parlamentoAndino.detalle}</p>
+        </div>
+        <div id="resultadoFinal"></div>
+      `;
+
+      let html = `
+    <h2>Resultados de tu Voto</h2>
+    <p>Los siguientes resultados se muestran por cámara, siguiendo las reglas oficiales de evaluación.</p>
+`;
+
+      function bloqueCamara(titulo, datos) {
+        let estado = datos.estado;
+        let clase = estado;
+
+        let explicacion = "";
+
+        if (estado === "valido") {
+          explicacion = `
+            <p class="${clase}"><strong>VOTO VÁLIDO</strong></p>
+            <p>Organización política seleccionada: <strong>${datos.organizacion || "—"}</strong></p>
+        `;
+
+          if (datos.preferencias && datos.preferencias.length > 0) {
+            explicacion += `<p>Preferencias marcadas:</p><ul>`;
+            datos.preferencias.forEach((p) => {
+              explicacion += `<li>Número ${p.numero} — ${p.nombre}</li>`;
+            });
+            explicacion += `</ul>`;
+          } else {
+            explicacion += `<p>No marcaste preferencias en esta cámara.</p>`;
+          }
+
+        } else if (estado === "blanco") {
+          explicacion = `
+            <p class="${clase}"><strong>VOTO EN BLANCO</strong></p>
+            <p>No se registró ninguna marca en esta cámara.</p>
+        `;
+        } else {
+          explicacion = `
+            <p class="${clase}"><strong>VOTO NULO</strong></p>
+            <p>Motivo:</p>
+            <ul>
+                ${
+                    datos.motivos?.map((m) => `<li>${m}</li>`).join("")
+                    || "<li>Se identificaron marcas no permitidas.</li>"
+                }
+            </ul>
+        `;
+        }
+
+        return `
+        <div class="bloqueResultadoCamara">
+            <hr>
+            <h3>${titulo}</h3>
+            ${explicacion}
+        </div>
+    `;
+      }
+
+      const votoFinalPresentacion = {
+        presidente: {
+          ...resumen.presidente,
+          organizacion: votoFinal.presidente || "—",
+          preferencias: []
+        },
+        senadoresNacionales: {
+          ...resumen.senadoNacional,
+          organizacion: votoFinal.senadoNacional?.[0] || "—",
+          preferencias: (votoFinal.preferenciasSenadoNacional || []).map((p) => ({ numero: p, nombre: String(p) }))
+        },
+        senadoresRegionales: {
+          ...resumen.senadoRegional,
+          organizacion: votoFinal.senadoRegional?.[0] || "—",
+          preferencias: (votoFinal.preferenciasSenadoRegional || []).map((p) => ({ numero: p, nombre: String(p) }))
+        },
+        diputados: {
+          ...resumen.diputados,
+          organizacion: votoFinal.diputados?.[0] || "—",
+          preferencias: (votoFinal.preferenciasDiputados || []).map((p) => ({ numero: p, nombre: String(p) }))
+        },
+        parlamentoAndino: {
+          ...resumen.parlamentoAndino,
+          organizacion: votoFinal.parlamentoAndino?.[0] || "—",
+          preferencias: (votoFinal.preferenciasParlamentoAndino || []).map((p) => ({ numero: p, nombre: String(p) }))
+        }
+      };
+
+      html += bloqueCamara("Presidente", votoFinalPresentacion.presidente);
+      html += bloqueCamara("Senadores Nacionales", votoFinalPresentacion.senadoresNacionales);
+      html += bloqueCamara("Senadores Regionales", votoFinalPresentacion.senadoresRegionales);
+      html += bloqueCamara("Diputados", votoFinalPresentacion.diputados);
+      html += bloqueCamara("Parlamento Andino", votoFinalPresentacion.parlamentoAndino);
+
+      const resultadoFinalContenedor = document.getElementById("resultadoFinal");
+      if (resultadoFinalContenedor) {
+        resultadoFinalContenedor.innerHTML = html;
+      }
+    }
+
+    function obtenerMensajeValidacion() {
+      let mensajeValidacion = document.getElementById("mensaje-validacion");
+      if (mensajeValidacion) {
+        return mensajeValidacion;
+      }
+
+      const pantallaSimulador = document.getElementById(rutas.simulador);
+      if (!pantallaSimulador) {
+        return null;
+      }
+
+      mensajeValidacion = document.createElement("div");
+      mensajeValidacion.id = "mensaje-validacion";
+      pantallaSimulador.appendChild(mensajeValidacion);
+      return mensajeValidacion;
+    }
+
+    function mostrarPantalla(id) {
+      const destino = id === "detalle" ? rutas.detalle : id;
+      const pantallas = document.querySelectorAll(".pantalla");
+      pantallas.forEach((pantalla) => {
+        pantalla.hidden = true;
+        pantalla.classList.remove("fade-in", "show");
+      });
+
+      const seleccionada = document.getElementById(destino);
+      if (!seleccionada) {
+        return;
+      }
+
+      seleccionada.hidden = false;
+      seleccionada.classList.add("fade-in");
+      requestAnimationFrame(() => {
+        seleccionada.classList.add("show");
+      });
+
+      if (destino === rutas.simulador) {
+        renderCedula();
+      }
+    }
+
+    function mostrarLoader(ms = 600) {
+      const loader = document.getElementById("loader");
+      if (!loader) {
+        return Promise.resolve();
+      }
+
+      loader.hidden = false;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          loader.hidden = true;
+          resolve();
+        }, ms);
+      });
+    }
+
+    async function navegarConLoader(destino) {
+      if (!destino) {
+        return;
+      }
+
+      await mostrarLoader();
+      mostrarPantalla(destino);
+    }
+
+    function cargarMisiones() {
+      const listaMisiones = document.getElementById("lista-misiones");
+      if (!listaMisiones) {
+        return;
+      }
+
+      const htmlMisiones = misiones.map((mision) => {
+        return `<button type="button" data-mision="${mision.id}" aria-label="Abrir misión ${mision.titulo}">${mision.titulo}</button>`;
+      }).join("");
+
+      listaMisiones.innerHTML = htmlMisiones;
+    }
+
+    function cargarDetalle(id) {
+    }
+
+    document.querySelectorAll("[data-nav]").forEach((boton) => {
+      boton.addEventListener("click", async () => {
+        await navegarConLoader(boton.getAttribute("data-nav"));
+      });
+    });
+
+    const botonIniciar = document.getElementById("btn-iniciar");
+    if (botonIniciar) {
+      botonIniciar.addEventListener("click", async () => {
+        await navegarConLoader(rutas.misiones);
+      });
+    }
+
+    document.querySelectorAll("[data-back], [data-volver]").forEach((botonVolver) => {
+      botonVolver.addEventListener("click", async () => {
+        const destino = botonVolver.getAttribute("data-back") || botonVolver.getAttribute("data-volver") || rutas.misiones;
+        await navegarConLoader(destino);
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      const botonMision = event.target.closest("[data-mision]");
+      if (!botonMision) {
+        return;
+      }
+
+      const idMision = botonMision.getAttribute("data-mision");
+      mostrarPantalla("detalle");
+      cargarDetalle(idMision);
+    });
+
+
+    const simuladorCedula = document.getElementById("simulador-cedula");
+    if (simuladorCedula) {
+      simuladorCedula.addEventListener("click", (event) => {
+        const opcion = event.target.closest(".opcion-cedula");
+        if (!opcion) {
+          return;
+        }
+
+        const columna = opcion.getAttribute("data-columna");
+        const idOpcion = opcion.getAttribute("data-id");
+        if (!columna || !idOpcion) {
+          return;
+        }
+
+        seleccionarOpcion(columna, idOpcion);
+      });
+    }
+
+
+    document.querySelectorAll('[data-continue="simulador"]').forEach((botonContinuar) => {
+      botonContinuar.addEventListener("click", () => {
+        const resultadoValidacion = validarVoto();
+        const mensajeValidacion = obtenerMensajeValidacion();
+
+        if (!resultadoValidacion.valido) {
+          if (mensajeValidacion) {
+            mensajeValidacion.textContent = resultadoValidacion.mensaje;
+          }
+          return;
+        }
+
+        if (mensajeValidacion) {
+          mensajeValidacion.textContent = "";
+        }
+
+        const votoFinal = prepararVotoFinal();
+        const resultadoReglasBasicas = validarReglasBasicas(votoFinal);
+
+        if (!resultadoReglasBasicas.valido) {
+          if (mensajeValidacion) {
+            mensajeValidacion.textContent = "Aún no es un voto válido.";
+          }
+          return;
+        }
+
+        const resultadoPreferencias = validarPreferencias(votoFinal);
+        if (!resultadoPreferencias.valido) {
+          if (mensajeValidacion) {
+            mensajeValidacion.textContent = resultadoPreferencias.mensaje;
+          }
+          return;
+        }
+
+        const resultadoFinal = evaluarVotoCompleto(votoFinal);
+        mostrarPantalla(rutas.resultados);
+        renderResultados(votoFinal, resultadoFinal);
+      });
+    });
+
+    cargarMisiones();
+
+    function runInternalTests() {
+      const resultados = [];
+
+      const registrar = (nombre, esperado, obtenido) => {
+        const normalizar = (valor) => typeof valor === "string" ? valor : JSON.stringify(valor);
+        resultados.push({
+          nombre,
+          esperado: normalizar(esperado),
+          obtenido: normalizar(obtenido),
+          pasa: normalizar(esperado) === normalizar(obtenido)
+        });
+      };
+
+      const crearVotoBase = () => ({
+        presidente: "P1",
+        senadoNacional: ["SN1"],
+        senadoRegional: ["SR1"],
+        diputados: ["D1"],
+        parlamentoAndino: ["PA1"],
+        preferenciasSenadoNacional: [],
+        preferenciasSenadoRegional: [],
+        preferenciasDiputados: [],
+        preferenciasParlamentoAndino: []
+      });
+
+      const votoPresidenteValido = crearVotoBase();
+      registrar(
+        "1. Presidente — voto válido",
+        "valido",
+        evaluarCamara("presidente", votoPresidenteValido).estado
+      );
+
+      const votoSNExceso = crearVotoBase();
+      votoSNExceso.preferenciasSenadoNacional = ["01", "02", "03"];
+      registrar(
+        "2. Senadores Nacionales — nulo por exceso de preferencias",
+        "preferencias",
+        validarPreferencias(votoSNExceso).tipo
+      );
+
+      const votoSRValido = crearVotoBase();
+      votoSRValido.preferenciasSenadoRegional = ["01"];
+      registrar(
+        "3. Senadores Regionales — válido con 1 preferencia",
+        "valido",
+        evaluarCamara("senadoRegional", votoSRValido).estado
+      );
+
+      const votoSRExceso = crearVotoBase();
+      votoSRExceso.preferenciasSenadoRegional = ["01", "02"];
+      registrar(
+        "4. Senadores Regionales — nulo por exceso",
+        "nulo",
+        evaluarCamara("senadoRegional", votoSRExceso).estado
+      );
+
+      const votoDipBlanco = crearVotoBase();
+      votoDipBlanco.diputados = [];
+      registrar(
+        "5. Diputados — voto en blanco",
+        "blanco",
+        evaluarCamara("diputados", votoDipBlanco).estado
+      );
+
+      const votoPAValido = crearVotoBase();
+      votoPAValido.preferenciasParlamentoAndino = ["01", "02"];
+      registrar(
+        "6. Parlamento Andino — válido con 2 preferencias",
+        "valido",
+        evaluarCamara("parlamentoAndino", votoPAValido).estado
+      );
+
+      const votoPAInvalidas = crearVotoBase();
+      votoPAInvalidas.preferenciasParlamentoAndino = ["99", "98"];
+      registrar(
+        "7. Parlamento Andino — nulo por preferencias fuera del partido",
+        "nulo",
+        evaluarCamara("parlamentoAndino", votoPAInvalidas).estado
+      );
+
+      const votoIntegrado = crearVotoBase();
+      votoIntegrado.preferenciasSenadoNacional = ["01", "02"];
+      votoIntegrado.preferenciasSenadoRegional = ["01"];
+      votoIntegrado.preferenciasDiputados = ["01"];
+      votoIntegrado.preferenciasParlamentoAndino = ["01"];
+      const evaluacionCompleta = evaluarVotoCompleto(votoIntegrado);
+      const validacionBasica = validarReglasBasicas(votoIntegrado);
+      const validacionPrefs = validarPreferencias(votoIntegrado);
+      registrar(
+        "8. Integración total — evaluación por cámara y global",
+        { presidente: "valido", globalBasica: true, globalPreferencias: true },
+        {
+          presidente: evaluacionCompleta.presidente.estado,
+          globalBasica: !!validacionBasica.valido,
+          globalPreferencias: !!validacionPrefs.valido
+        }
+      );
+
+      console.table(resultados);
+      return resultados;
+    }
+
+    // Para ejecutar pruebas: runInternalTests();
+  </script>
+  <script id="script-service-worker"></script>
+  <script id="script-manifest"></script>
+  <script id="script-inicializacion"></script>
+
+  <!-- FASE 3 COMPLETADA — listo para generar FASE 4 -->
+</body>
+</html>
