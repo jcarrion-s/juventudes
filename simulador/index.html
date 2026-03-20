@@ -37,6 +37,7 @@
     }
     .board-header {
       display: grid;
+      grid-template-columns: 1.8fr 90px 90px 72px;
       grid-template-columns: 1.8fr 90px 90px;
       gap: 0;
       background: #dbeafe;
@@ -53,6 +54,7 @@
 
     .row {
       display: grid;
+      grid-template-columns: 1.8fr 90px 90px 72px;
       grid-template-columns: 1.8fr 90px 90px;
       align-items: center;
       border-bottom: 1px solid #e5e7eb;
@@ -82,26 +84,55 @@
       border: 1px solid #d1d5db;
       display: block;
     }
+    .casilla {
+      width: 46px;
+      height: 46px;
+      border: 2px solid #6b7280;
+      border-radius: 6px;
     .opcion-voto {
+      position: relative;
+      width: 60px;
+      height: 60px;
       padding: 0;
       border: 2px solid transparent;
       border-radius: 10px;
       background: transparent;
       cursor: pointer;
+      background: #fff;
+      font-size: 28px;
+      display: flex;
+      transition: .15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
       transition: .15s ease;
     }
+    .casilla:hover {
+      background: #f9fafb;
     .opcion-voto:hover {
       transform: scale(1.03);
     }
+    .casilla.seleccionada {
     .opcion-voto:focus-visible {
       outline: 2px solid #2563eb;
       outline-offset: 2px;
     }
     .opcion-voto.valido {
       border-color: #16a34a;
+      background: #ecfdf5;
+      color: #16a34a;
     }
     .opcion-voto.invalido {
       border-color: #dc2626;
+    }
+    .marca-preview {
+      position: absolute;
+      inset: 2px;
+      width: calc(100% - 4px);
+      height: calc(100% - 4px);
+      pointer-events: none;
+      border-radius: 8px;
     }
 
     .estado {
@@ -113,6 +144,83 @@
       border: 1px solid #bfdbfe;
       text-align: center;
       font-weight: 600;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.6);
+      z-index: 1000;
+    }
+    .modal.activo {
+      display: flex;
+    }
+    .modal-contenido {
+      width: min(92vw, 420px);
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.2);
+      padding: 20px;
+    }
+    .modal-contenido h2 {
+      margin: 0 0 8px;
+      font-size: 1.4rem;
+      color: #0f172a;
+    }
+    .modal-ayuda {
+      margin: 0 0 16px;
+      color: #475569;
+      font-size: .95rem;
+    }
+    .modal-lienzo {
+      position: relative;
+      width: min(100%, 280px);
+      aspect-ratio: 1 / 1;
+      margin: 0 auto 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+    .modal-imagen,
+    .modal-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .modal-imagen {
+      object-fit: contain;
+      background: #fff;
+    }
+    .modal-canvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+    .modal-botones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .modal-botones button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-secundario {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+    .btn-primario {
+      background: #0ea5e9;
+      color: #fff;
     }
 
     @media (max-width: 700px) {
@@ -145,17 +253,28 @@
         font-weight: 700;
         color: #4b5563;
       }
+      .modal-contenido {
+        padding: 16px;
+      }
+      .modal-botones {
+        justify-content: stretch;
+      }
+      .modal-botones button {
+        flex: 1 1 120px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Simulador de voto</h1>
+    <p class="sub">Módulo inicial de Presidencia con logos, foto y casilla de selección.</p>
     <p class="sub">Módulo inicial de Presidencia con selección directa sobre símbolo o foto.</p>
 
     <div class="board" id="board"></div>
 
     <div class="estado" id="estado">
+      Selecciona una casilla para marcar tu voto.
       Selecciona el símbolo o la foto del candidato.
     </div>
   </div>
@@ -204,8 +323,127 @@
 
     const board = document.getElementById("board");
     const estado = document.getElementById("estado");
+    let seleccionActual = null;
+
+    function crearBotonModal(id, texto, clase) {
+      const boton = document.createElement("button");
+      boton.type = "button";
+      boton.id = id;
+      boton.className = clase;
+      boton.textContent = texto;
+      return boton;
+    }
+
+    function crearModal() {
+      const modalElemento = document.createElement("div");
+      modalElemento.className = "modal";
+      modalElemento.id = "modalMarca";
+      modalElemento.setAttribute("aria-hidden", "true");
+
+      const contenido = document.createElement("div");
+      contenido.className = "modal-contenido";
+      contenido.setAttribute("role", "dialog");
+      contenido.setAttribute("aria-modal", "true");
+      contenido.setAttribute("aria-labelledby", "modalTitulo");
+
+      const titulo = document.createElement("h2");
+      titulo.id = "modalTitulo";
+      titulo.textContent = "Marca tu voto";
+
+      const ayuda = document.createElement("p");
+      ayuda.className = "modal-ayuda";
+      ayuda.textContent = "Dibuja una X o una cruz dentro del símbolo o la foto";
+
+      const lienzo = document.createElement("div");
+      lienzo.className = "modal-lienzo";
+      lienzo.id = "modalLienzo";
+
+      const imagen = document.createElement("img");
+      imagen.className = "modal-imagen";
+      imagen.id = "modalImagen";
+      imagen.alt = "Opción seleccionada para marcar";
+
+      const canvas = document.createElement("canvas");
+      canvas.className = "modal-canvas";
+      canvas.id = "modalCanvas";
+
+      const botones = document.createElement("div");
+      botones.className = "modal-botones";
+      botones.append(
+        crearBotonModal("btnLimpiar", "Limpiar", "btn-secundario"),
+        crearBotonModal("btnCancelar", "Cancelar", "btn-secundario"),
+        crearBotonModal("btnConfirmar", "Confirmar", "btn-primario")
+      );
+
+      lienzo.append(imagen, canvas);
+      contenido.append(titulo, ayuda, lienzo, botones);
+      modalElemento.appendChild(contenido);
+      document.body.appendChild(modalElemento);
+      return modalElemento;
+    }
+
+    const modal = crearModal();
+    const modalLienzo = document.getElementById("modalLienzo");
+    const modalImagen = document.getElementById("modalImagen");
+    const modalCanvas = document.getElementById("modalCanvas");
+    const modalCtx = modalCanvas.getContext("2d");
+    const btnLimpiar = document.getElementById("btnLimpiar");
+    const btnCancelar = document.getElementById("btnCancelar");
+    const btnConfirmar = document.getElementById("btnConfirmar");
+
     let seleccionLogo = null;
     let seleccionFoto = null;
+    let mensajeTemporal = "";
+    let marcas = {};
+    let modalActivo = null;
+    let dibujando = false;
+    let trazosModal = [];
+    let trazoActual = [];
+
+    function getClave(index, tipo) {
+      return `${tipo}-${index}`;
+    }
+
+    function clonarTrazos(trazos) {
+      return trazos.map((trazo) => trazo.map((punto) => ({ x: punto.x, y: punto.y })));
+    }
+
+
+    function crearCeldaOpcion(item, index, tipo, etiqueta) {
+      const imagenClase = tipo === "logo" ? "logo" : "foto";
+      const descripcion = tipo === "logo" ? "símbolo" : "foto";
+
+      const cell = document.createElement("div");
+      cell.className = "cell";
+
+      const linea = document.createElement("div");
+      linea.className = "mobile-line";
+
+      const label = document.createElement("span");
+      label.className = "mobile-label";
+      label.textContent = etiqueta;
+
+      const button = document.createElement("button");
+      button.className = "opcion-voto";
+      button.dataset.index = index;
+      button.dataset.tipo = tipo;
+      button.setAttribute("aria-label", `Marcar ${descripcion} de ${item.partido}`);
+
+      const image = document.createElement("img");
+      image.className = imagenClase;
+      image.src = item[tipo];
+      image.alt = `${etiqueta} de ${item.partido}`;
+
+      const preview = document.createElement("canvas");
+      preview.className = "marca-preview";
+      preview.width = 56;
+      preview.height = 56;
+
+      button.append(image, preview);
+      linea.append(label, button);
+      cell.appendChild(linea);
+      return cell;
+    }
 
     function render() {
       board.innerHTML = "";
@@ -216,7 +454,13 @@
         <div>PARTIDO</div>
         <div>SÍMBOLO</div>
         <div>FOTO</div>
+        <div>VOTO</div>
       `;
+      ["PARTIDO", "SÍMBOLO", "FOTO"].forEach((titulo) => {
+        const columna = document.createElement("div");
+        columna.textContent = titulo;
+        header.appendChild(columna);
+      });
       board.appendChild(header);
 
       data.forEach((item, index) => {
@@ -229,86 +473,358 @@
           <div class="cell">
             <div class="mobile-line">
               <span class="mobile-label">Símbolo</span>
-              <button class="opcion-voto" data-index="${index}" data-tipo="logo" aria-label="Seleccionar símbolo de ${item.partido}">
-                <img class="logo" src="${item.logo}" alt="Logo de ${item.partido}">
-              </button>
+              <img class="logo" src="${item.logo}" alt="Logo de ${item.partido}">
             </div>
           </div>
 
           <div class="cell">
             <div class="mobile-line">
               <span class="mobile-label">Foto</span>
-              <button class="opcion-voto" data-index="${index}" data-tipo="foto" aria-label="Seleccionar foto de ${item.partido}">
-                <img class="foto" src="${item.foto}" alt="Foto de ${item.partido}">
-              </button>
+              <img class="foto" src="${item.foto}" alt="Foto de ${item.partido}">
+            </div>
+          </div>
+
+          <div class="cell">
+            <div class="mobile-line">
+              <span class="mobile-label">Voto</span>
+              <button class="casilla" data-index="${index}" aria-label="Seleccionar ${item.partido}"></button>
             </div>
           </div>
         `;
+        const party = document.createElement("div");
+        party.className = "party";
+        party.textContent = item.partido;
+
+        row.append(
+          party,
+          crearCeldaOpcion(item, index, "logo", "Símbolo"),
+          crearCeldaOpcion(item, index, "foto", "Foto")
+        );
 
         board.appendChild(row);
       });
 
+      document.querySelectorAll(".casilla").forEach(btn => {
+        btn.addEventListener("click", () => seleccionar(btn));
       document.querySelectorAll(".opcion-voto").forEach((btn) => {
-        btn.addEventListener("click", () => seleccionarOpcion(btn));
+        btn.addEventListener("click", () => abrirModal(btn));
       });
 
       actualizarVista();
     }
 
-    function seleccionarOpcion(btn) {
+    function seleccionar(btn) {
+      document.querySelectorAll(".casilla").forEach(c => {
+        c.classList.remove("seleccionada");
+        c.textContent = "";
+      });
+    function abrirModal(btn) {
       const index = Number(btn.dataset.index);
       const tipo = btn.dataset.tipo;
+      const item = data[index];
+      const clave = getClave(index, tipo);
+      const marcaGuardada = marcas[clave];
 
-      if (tipo === "logo") {
-        seleccionLogo = seleccionLogo === index ? null : index;
+      modalActivo = { index, tipo };
+      modalImagen.src = item[tipo];
+      modalImagen.alt = `${tipo === "logo" ? "Símbolo" : "Foto"} de ${item.partido}`;
+      trazosModal = marcaGuardada ? clonarTrazos(marcaGuardada.trazos) : [];
+      ajustarCanvasModal();
+      redibujarModal();
+      modal.classList.add("activo");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+      btn.classList.add("seleccionada");
+      btn.textContent = "X";
+    function cerrarModal() {
+      modal.classList.remove("activo");
+      modal.setAttribute("aria-hidden", "true");
+      modalActivo = null;
+      dibujando = false;
+      trazoActual = [];
+      trazosModal = [];
+      limpiarCanvas(modalCanvas, modalCtx);
+    }
+
+      const index = Number(btn.dataset.index);
+      seleccionActual = data[index];
+    function ajustarCanvasModal() {
+      const rect = modalLienzo.getBoundingClientRect();
+      modalCanvas.width = Math.round(rect.width);
+      modalCanvas.height = Math.round(rect.height);
+      modalCtx.lineCap = "round";
+      modalCtx.lineJoin = "round";
+      modalCtx.lineWidth = 8;
+    }
+
+    function limpiarCanvas(canvas, ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function dibujarTrazo(ctx, trazo, color, escalaX = 1, escalaY = 1) {
+      if (!trazo.length) {
+        return;
+      }
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.moveTo(trazo[0].x * escalaX, trazo[0].y * escalaY);
+      for (let i = 1; i < trazo.length; i += 1) {
+        ctx.lineTo(trazo[i].x * escalaX, trazo[i].y * escalaY);
+      }
+      ctx.stroke();
+    }
+
+    function redibujarModal() {
+      limpiarCanvas(modalCanvas, modalCtx);
+      trazosModal.forEach((trazo) => dibujarTrazo(modalCtx, trazo, "#2563eb"));
+      if (trazoActual.length) {
+        dibujarTrazo(modalCtx, trazoActual, "#2563eb");
+      }
+    }
+
+    function obtenerPunto(event) {
+      const rect = modalCanvas.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    }
+
+    function iniciarDibujo(event) {
+      if (!modalActivo) {
+        return;
+      }
+      event.preventDefault();
+      dibujando = true;
+      trazoActual = [obtenerPunto(event)];
+      modalCanvas.setPointerCapture(event.pointerId);
+      redibujarModal();
+    }
+
+    function moverDibujo(event) {
+      if (!dibujando) {
+        return;
+      }
+      event.preventDefault();
+      trazoActual.push(obtenerPunto(event));
+      redibujarModal();
+    }
+
+    function terminarDibujo(event) {
+      if (!dibujando) {
+        return;
+      }
+      event.preventDefault();
+      dibujando = false;
+      if (trazoActual.length > 1) {
+        trazosModal.push(trazoActual.map((punto) => ({ x: punto.x, y: punto.y })));
+      }
+      trazoActual = [];
+      if (modalCanvas.hasPointerCapture(event.pointerId)) {
+        modalCanvas.releasePointerCapture(event.pointerId);
+      }
+      redibujarModal();
+    }
+
+    function limpiarModal() {
+      trazosModal = [];
+      trazoActual = [];
+      redibujarModal();
+    }
+
+    function obtenerSegmento(trazo) {
+      if (!trazo || trazo.length < 2) {
+        return null;
+      }
+      return {
+        inicio: trazo[0],
+        fin: trazo[trazo.length - 1]
+      };
+    }
+
+    function esDiagonal(trazo) {
+      const segmento = obtenerSegmento(trazo);
+      if (!segmento) {
+        return false;
+      }
+      const dx = segmento.fin.x - segmento.inicio.x;
+      const dy = segmento.fin.y - segmento.inicio.y;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+      const mayor = Math.max(absDx, absDy);
+      if (mayor < 30 || Math.min(absDx, absDy) < 20) {
+        return false;
+      }
+      return Math.abs(absDx - absDy) / mayor < 0.75;
+    }
+
+    function orientacion(a, b, c) {
+      const valor = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+      if (Math.abs(valor) < 0.01) {
+        return 0;
+      }
+      return valor > 0 ? 1 : 2;
+    }
+
+    function segmentosSeCruzan(seg1, seg2) {
+      const o1 = orientacion(seg1.inicio, seg1.fin, seg2.inicio);
+      const o2 = orientacion(seg1.inicio, seg1.fin, seg2.fin);
+      const o3 = orientacion(seg2.inicio, seg2.fin, seg1.inicio);
+      const o4 = orientacion(seg2.inicio, seg2.fin, seg1.fin);
+      return o1 !== o2 && o3 !== o4;
+    }
+
+      estado.textContent = `Has seleccionado: ${seleccionActual.partido}`;
+    function esMarcaValida(trazos) {
+      const diagonales = trazos.filter(esDiagonal).map((trazo) => ({
+        trazo,
+        segmento: obtenerSegmento(trazo)
+      }));
+
+      for (let i = 0; i < diagonales.length; i += 1) {
+        for (let j = i + 1; j < diagonales.length; j += 1) {
+          const a = diagonales[i].segmento;
+          const b = diagonales[j].segmento;
+          const pendienteA = (a.fin.x - a.inicio.x) * (a.fin.y - a.inicio.y);
+          const pendienteB = (b.fin.x - b.inicio.x) * (b.fin.y - b.inicio.y);
+          if (pendienteA === 0 || pendienteB === 0 || pendienteA * pendienteB > 0) {
+            continue;
+          }
+          if (segmentosSeCruzan(a, b)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function guardarMarca() {
+      if (!modalActivo) {
+        return;
       }
 
-      if (tipo === "foto") {
-        seleccionFoto = seleccionFoto === index ? null : index;
+      const { index, tipo } = modalActivo;
+      const clave = getClave(index, tipo);
+      const tieneTrazos = trazosModal.some((trazo) => trazo.length > 1);
+
+      if (!tieneTrazos) {
+        delete marcas[clave];
+        if (tipo === "logo") {
+          seleccionLogo = null;
+        } else {
+          seleccionFoto = null;
+        }
+        mensajeTemporal = "Selecciona el símbolo o la foto del candidato.";
+        actualizarVista();
+        cerrarModal();
+        return;
+      }
+
+      const valido = esMarcaValida(trazosModal);
+      marcas[clave] = {
+        trazos: clonarTrazos(trazosModal),
+        valido,
+        width: modalCanvas.width,
+        height: modalCanvas.height
+      };
+
+      if (valido) {
+        if (tipo === "logo") {
+          seleccionLogo = index;
+        } else {
+          seleccionFoto = index;
+        }
+        mensajeTemporal = `Marca válida registrada en ${data[index].partido}`;
+      } else {
+        if (tipo === "logo" && seleccionLogo === index) {
+          seleccionLogo = null;
+        }
+        if (tipo === "foto" && seleccionFoto === index) {
+          seleccionFoto = null;
+        }
+        mensajeTemporal = "Marca inválida. Intenta nuevamente.";
       }
 
       actualizarVista();
+      cerrarModal();
+    }
+
+    function pintarMarcaPreview(btn, marca) {
+      const canvas = btn.querySelector(".marca-preview");
+      const ctx = canvas.getContext("2d");
+      limpiarCanvas(canvas, ctx);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 4;
+
+      if (!marca) {
+        return;
+      }
+
+      const color = marca.valido ? "#16a34a" : "#dc2626";
+      const escalaX = canvas.width / marca.width;
+      const escalaY = canvas.height / marca.height;
+      marca.trazos.forEach((trazo) => dibujarTrazo(ctx, trazo, color, escalaX, escalaY));
     }
 
     function obtenerEstadoVoto() {
       if (seleccionLogo === null && seleccionFoto === null) {
-        return { mensaje: "Selecciona el símbolo o la foto del candidato.", tipo: "inicial" };
+        return "Selecciona el símbolo o la foto del candidato.";
       }
 
       if (seleccionLogo !== null && seleccionFoto !== null && seleccionLogo !== seleccionFoto) {
-        return {
-          mensaje: "Voto nulo: el símbolo y la foto pertenecen a partidos distintos.",
-          tipo: "invalido"
-        };
+        return "Voto nulo: el símbolo y la foto pertenecen a partidos distintos.";
       }
 
       const indexSeleccionado = seleccionLogo ?? seleccionFoto;
-      return {
-        mensaje: `Voto válido en Presidencia: ${data[indexSeleccionado].partido}`,
-        tipo: "valido"
-      };
+      return `Voto válido en Presidencia: ${data[indexSeleccionado].partido}`;
     }
 
     function actualizarVista() {
-      document.querySelectorAll('.opcion-voto').forEach((btn) => {
+      document.querySelectorAll(".opcion-voto").forEach((btn) => {
         const index = Number(btn.dataset.index);
         const tipo = btn.dataset.tipo;
-        const estaSeleccionado = (tipo === 'logo' && seleccionLogo === index)
-          || (tipo === 'foto' && seleccionFoto === index);
+        const clave = getClave(index, tipo);
+        const marca = marcas[clave];
 
-        btn.classList.remove('valido', 'invalido');
-
-        if (!estaSeleccionado) {
-          return;
+        btn.classList.remove("valido", "invalido");
+        if (marca) {
+          btn.classList.add(marca.valido ? "valido" : "invalido");
         }
 
-        const esInvalido = seleccionLogo !== null && seleccionFoto !== null && seleccionLogo !== seleccionFoto;
-        btn.classList.add(esInvalido ? 'invalido' : 'valido');
+        pintarMarcaPreview(btn, marca);
       });
 
-      const estadoActual = obtenerEstadoVoto();
-      estado.textContent = estadoActual.mensaje;
+      const mensaje = mensajeTemporal || obtenerEstadoVoto();
+      estado.textContent = mensaje;
+      mensajeTemporal = "";
     }
+
+    modalCanvas.addEventListener("pointerdown", iniciarDibujo);
+    modalCanvas.addEventListener("pointermove", moverDibujo);
+    modalCanvas.addEventListener("pointerup", terminarDibujo);
+    modalCanvas.addEventListener("pointercancel", terminarDibujo);
+    modalCanvas.addEventListener("pointerleave", (event) => {
+      if (dibujando && event.buttons === 0) {
+        terminarDibujo(event);
+      }
+    });
+
+    btnLimpiar.addEventListener("click", limpiarModal);
+    btnCancelar.addEventListener("click", cerrarModal);
+    btnConfirmar.addEventListener("click", guardarMarca);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        cerrarModal();
+      }
+    });
+    window.addEventListener("resize", () => {
+      if (modalActivo) {
+        ajustarCanvasModal();
+        redibujarModal();
+      }
+    });
 
     render();
   </script>
