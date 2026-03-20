@@ -1,1 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de voto - Presidencia</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      color: #046b76;
+      font-size: 2rem;
+    }
+    .sub {
+      text-align: center;
+      margin: 0 0 24px;
+      color: #4b5563;
+    }
+    .board {
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,.06);
+    }
+    .board-header {
+      display: grid;
+      grid-template-columns: 1.8fr 90px 90px 72px;
+      gap: 0;
+      background: #dbeafe;
+      border-bottom: 1px solid #cbd5e1;
+      font-weight: bold;
+      font-size: 14px;
+      text-align: center;
+    }
+    .board-header div {
+      padding: 12px 8px;
+      border-right: 1px solid #cbd5e1;
+    }
+    .board-header div:last-child { border-right: 0; }
 
+    .row {
+      display: grid;
+      grid-template-columns: 1.8fr 90px 90px 72px;
+      align-items: center;
+      border-bottom: 1px solid #e5e7eb;
+      background: #fff;
+    }
+    .row:last-child { border-bottom: 0; }
+
+    .party {
+      padding: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .cell {
+      padding: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-left: 1px solid #e5e7eb;
+      min-height: 84px;
+    }
+    .logo, .foto {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #d1d5db;
+    }
+    .casilla {
+      width: 46px;
+      height: 46px;
+      border: 2px solid #6b7280;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #fff;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: .15s ease;
+    }
+    .casilla:hover {
+      background: #f9fafb;
+      transform: scale(1.03);
+    }
+    .casilla.seleccionada {
+      border-color: #16a34a;
+      background: #ecfdf5;
+      color: #16a34a;
+    }
+
+    .estado {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    @media (max-width: 700px) {
+      .board-header {
+        display: none;
+      }
+      .row {
+        grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 10px;
+        background: #fff;
+      }
+      .party {
+        padding: 0;
+      }
+      .cell {
+        border-left: 0;
+        min-height: auto;
+        justify-content: flex-start;
+        padding: 0;
+      }
+      .mobile-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .mobile-label {
+        min-width: 62px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #4b5563;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Simulador de voto</h1>
+    <p class="sub">Módulo inicial de Presidencia con logos, foto y casilla de selección.</p>
+
+    <div class="board" id="board"></div>
+
+    <div class="estado" id="estado">
+      Selecciona una casilla para marcar tu voto.
+    </div>
+  </div>
+
+  <script>
+    const data = [
+      {
+        partido: "Alianza Venceremos",
+        logo: "assets/presidencia/01-venceremos-logo.png",
+        foto: "assets/presidencia/01-venceremos-presi.jpg"
+      },
+      {
+        partido: "Partido Patriótico del Perú",
+        logo: "assets/presidencia/02-patriotico-logo.png",
+        foto: "assets/presidencia/02-patriotico-presi.jpg"
+      },
+      {
+        partido: "Partido Cívico Obras",
+        logo: "assets/presidencia/03-civico-obras-logo.png",
+        foto: "assets/presidencia/03-civico-obras-presi.jpg"
+      },
+      {
+        partido: "Partido Demócrata Verde",
+        logo: "assets/presidencia/05-democrata-verde-logo.png",
+        foto: "assets/presidencia/05-democrata-verde-presi.jpg"
+      },
+      {
+        partido: "Partido del Buen Gobierno",
+        logo: "assets/presidencia/06-buen-gobierno-logo.png",
+        foto: "assets/presidencia/06-buen-gobierno-presi.jpg"
+      }
+    ];
+
+    const board = document.getElementById("board");
+    const estado = document.getElementById("estado");
+    let seleccionActual = null;
+
+    function render() {
+      board.innerHTML = "";
+
+      const header = document.createElement("div");
+      header.className = "board-header";
+      header.innerHTML = `
+        <div>PARTIDO</div>
+        <div>SÍMBOLO</div>
+        <div>FOTO</div>
+        <div>VOTO</div>
+      `;
+      board.appendChild(header);
+
+      data.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "row";
+
+        row.innerHTML = `
+          <div class="party">${item.partido}</div>
+
+          <div class="cell">
+            <div class="mobile-line">
+              <span class="mobile-label">Símbolo</span>
+              <img class="logo" src="${item.logo}" alt="Logo de ${item.partido}">
+            </div>
+          </div>
+
+          <div class="cell">
+            <div class="mobile-line">
+              <span class="mobile-label">Foto</span>
+              <img class="foto" src="${item.foto}" alt="Foto de ${item.partido}">
+            </div>
+          </div>
+
+          <div class="cell">
+            <div class="mobile-line">
+              <span class="mobile-label">Voto</span>
+              <button class="casilla" data-index="${index}" aria-label="Seleccionar ${item.partido}"></button>
+            </div>
+          </div>
+        `;
+
+        board.appendChild(row);
+      });
+
+      document.querySelectorAll(".casilla").forEach(btn => {
+        btn.addEventListener("click", () => seleccionar(btn));
+      });
+    }
+
+    function seleccionar(btn) {
+      document.querySelectorAll(".casilla").forEach(c => {
+        c.classList.remove("seleccionada");
+        c.textContent = "";
+      });
+
+      btn.classList.add("seleccionada");
+      btn.textContent = "X";
+
+      const index = Number(btn.dataset.index);
+      seleccionActual = data[index];
+
+      estado.textContent = `Has seleccionado: ${seleccionActual.partido}`;
+    }
+
+    render();
+  </script>
+</body>
+</html>
