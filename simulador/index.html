@@ -37,7 +37,7 @@
     }
     .board-header {
       display: grid;
-      grid-template-columns: 1.8fr 90px 90px 72px;
+      grid-template-columns: 1.8fr 90px 90px;
       gap: 0;
       background: #dbeafe;
       border-bottom: 1px solid #cbd5e1;
@@ -53,7 +53,7 @@
 
     .row {
       display: grid;
-      grid-template-columns: 1.8fr 90px 90px 72px;
+      grid-template-columns: 1.8fr 90px 90px;
       align-items: center;
       border-bottom: 1px solid #e5e7eb;
       background: #fff;
@@ -80,29 +80,28 @@
       border-radius: 8px;
       background: #fff;
       border: 1px solid #d1d5db;
+      display: block;
     }
-    .casilla {
-      width: 46px;
-      height: 46px;
-      border: 2px solid #6b7280;
-      border-radius: 6px;
+    .opcion-voto {
+      padding: 0;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      background: transparent;
       cursor: pointer;
-      background: #fff;
-      font-size: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
       transition: .15s ease;
     }
-    .casilla:hover {
-      background: #f9fafb;
+    .opcion-voto:hover {
       transform: scale(1.03);
     }
-    .casilla.seleccionada {
+    .opcion-voto:focus-visible {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
+    }
+    .opcion-voto.valido {
       border-color: #16a34a;
-      background: #ecfdf5;
-      color: #16a34a;
+    }
+    .opcion-voto.invalido {
+      border-color: #dc2626;
     }
 
     .estado {
@@ -152,12 +151,12 @@
 <body>
   <div class="wrap">
     <h1>Simulador de voto</h1>
-    <p class="sub">Módulo inicial de Presidencia con logos, foto y casilla de selección.</p>
+    <p class="sub">Módulo inicial de Presidencia con selección directa sobre símbolo o foto.</p>
 
     <div class="board" id="board"></div>
 
     <div class="estado" id="estado">
-      Selecciona una casilla para marcar tu voto.
+      Selecciona el símbolo o la foto del candidato.
     </div>
   </div>
 
@@ -205,7 +204,8 @@
 
     const board = document.getElementById("board");
     const estado = document.getElementById("estado");
-    let seleccionActual = null;
+    let seleccionLogo = null;
+    let seleccionFoto = null;
 
     function render() {
       board.innerHTML = "";
@@ -216,7 +216,6 @@
         <div>PARTIDO</div>
         <div>SÍMBOLO</div>
         <div>FOTO</div>
-        <div>VOTO</div>
       `;
       board.appendChild(header);
 
@@ -230,21 +229,18 @@
           <div class="cell">
             <div class="mobile-line">
               <span class="mobile-label">Símbolo</span>
-              <img class="logo" src="${item.logo}" alt="Logo de ${item.partido}">
+              <button class="opcion-voto" data-index="${index}" data-tipo="logo" aria-label="Seleccionar símbolo de ${item.partido}">
+                <img class="logo" src="${item.logo}" alt="Logo de ${item.partido}">
+              </button>
             </div>
           </div>
 
           <div class="cell">
             <div class="mobile-line">
               <span class="mobile-label">Foto</span>
-              <img class="foto" src="${item.foto}" alt="Foto de ${item.partido}">
-            </div>
-          </div>
-
-          <div class="cell">
-            <div class="mobile-line">
-              <span class="mobile-label">Voto</span>
-              <button class="casilla" data-index="${index}" aria-label="Seleccionar ${item.partido}"></button>
+              <button class="opcion-voto" data-index="${index}" data-tipo="foto" aria-label="Seleccionar foto de ${item.partido}">
+                <img class="foto" src="${item.foto}" alt="Foto de ${item.partido}">
+              </button>
             </div>
           </div>
         `;
@@ -252,24 +248,66 @@
         board.appendChild(row);
       });
 
-      document.querySelectorAll(".casilla").forEach(btn => {
-        btn.addEventListener("click", () => seleccionar(btn));
+      document.querySelectorAll(".opcion-voto").forEach((btn) => {
+        btn.addEventListener("click", () => seleccionarOpcion(btn));
       });
+
+      actualizarVista();
     }
 
-    function seleccionar(btn) {
-      document.querySelectorAll(".casilla").forEach(c => {
-        c.classList.remove("seleccionada");
-        c.textContent = "";
+    function seleccionarOpcion(btn) {
+      const index = Number(btn.dataset.index);
+      const tipo = btn.dataset.tipo;
+
+      if (tipo === "logo") {
+        seleccionLogo = seleccionLogo === index ? null : index;
+      }
+
+      if (tipo === "foto") {
+        seleccionFoto = seleccionFoto === index ? null : index;
+      }
+
+      actualizarVista();
+    }
+
+    function obtenerEstadoVoto() {
+      if (seleccionLogo === null && seleccionFoto === null) {
+        return { mensaje: "Selecciona el símbolo o la foto del candidato.", tipo: "inicial" };
+      }
+
+      if (seleccionLogo !== null && seleccionFoto !== null && seleccionLogo !== seleccionFoto) {
+        return {
+          mensaje: "Voto nulo: el símbolo y la foto pertenecen a partidos distintos.",
+          tipo: "invalido"
+        };
+      }
+
+      const indexSeleccionado = seleccionLogo ?? seleccionFoto;
+      return {
+        mensaje: `Voto válido en Presidencia: ${data[indexSeleccionado].partido}`,
+        tipo: "valido"
+      };
+    }
+
+    function actualizarVista() {
+      document.querySelectorAll('.opcion-voto').forEach((btn) => {
+        const index = Number(btn.dataset.index);
+        const tipo = btn.dataset.tipo;
+        const estaSeleccionado = (tipo === 'logo' && seleccionLogo === index)
+          || (tipo === 'foto' && seleccionFoto === index);
+
+        btn.classList.remove('valido', 'invalido');
+
+        if (!estaSeleccionado) {
+          return;
+        }
+
+        const esInvalido = seleccionLogo !== null && seleccionFoto !== null && seleccionLogo !== seleccionFoto;
+        btn.classList.add(esInvalido ? 'invalido' : 'valido');
       });
 
-      btn.classList.add("seleccionada");
-      btn.textContent = "X";
-
-      const index = Number(btn.dataset.index);
-      seleccionActual = data[index];
-
-      estado.textContent = `Has seleccionado: ${seleccionActual.partido}`;
+      const estadoActual = obtenerEstadoVoto();
+      estado.textContent = estadoActual.mensaje;
     }
 
     render();
