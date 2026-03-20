@@ -260,22 +260,6 @@
     </div>
   </div>
 
-  <div class="modal" id="modalMarca" aria-hidden="true">
-    <div class="modal-contenido" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
-      <h2 id="modalTitulo">Marca tu voto</h2>
-      <p class="modal-ayuda">Dibuja una X o una cruz dentro del símbolo o la foto</p>
-      <div class="modal-lienzo" id="modalLienzo">
-        <img class="modal-imagen" id="modalImagen" alt="Opción seleccionada para marcar" />
-        <canvas class="modal-canvas" id="modalCanvas"></canvas>
-      </div>
-      <div class="modal-botones">
-        <button type="button" class="btn-secundario" id="btnLimpiar">Limpiar</button>
-        <button type="button" class="btn-secundario" id="btnCancelar">Cancelar</button>
-        <button type="button" class="btn-primario" id="btnConfirmar">Confirmar</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     const data = [
   { partido: "Alianza Venceremos", logo: "assets/presidencia/01-venceremos-logo.png", foto: "assets/presidencia/01-venceremos-presi.jpg" },
@@ -320,7 +304,31 @@
 
     const board = document.getElementById("board");
     const estado = document.getElementById("estado");
-    const modal = document.getElementById("modalMarca");
+
+    function crearModal() {
+      const contenedor = document.createElement("div");
+      contenedor.innerHTML = `
+        <div class="modal" id="modalMarca" aria-hidden="true">
+          <div class="modal-contenido" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+            <h2 id="modalTitulo">Marca tu voto</h2>
+            <p class="modal-ayuda">Dibuja una X o una cruz dentro del símbolo o la foto</p>
+            <div class="modal-lienzo" id="modalLienzo">
+              <img class="modal-imagen" id="modalImagen" alt="Opción seleccionada para marcar" />
+              <canvas class="modal-canvas" id="modalCanvas"></canvas>
+            </div>
+            <div class="modal-botones">
+              <button type="button" class="btn-secundario" id="btnLimpiar">Limpiar</button>
+              <button type="button" class="btn-secundario" id="btnCancelar">Cancelar</button>
+              <button type="button" class="btn-primario" id="btnConfirmar">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(contenedor.firstElementChild);
+      return document.getElementById("modalMarca");
+    }
+
+    const modal = crearModal();
     const modalLienzo = document.getElementById("modalLienzo");
     const modalImagen = document.getElementById("modalImagen");
     const modalCanvas = document.getElementById("modalCanvas");
